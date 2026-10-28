@@ -9,23 +9,55 @@ import 'models/focus_session.dart';
 import 'providers/focus_providers.dart';
 import 'screens/settings_screen.dart';
 import 'utils/focus_recommendation.dart';
+import 'theme_controller.dart';
 
-void main() => runApp(const ProviderScope(child: AdaptiveFocusStudio()));
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await loadSavedTheme();
+  runApp(const ProviderScope(child: AdaptiveFocusStudio()));
+}
 
 class AdaptiveFocusStudio extends StatelessWidget {
   const AdaptiveFocusStudio({super.key});
 
   @override
-  Widget build(BuildContext context) => MaterialApp(
-        title: 'Adaptive Focus Studio',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          useMaterial3: true,
-          colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF5267D8)),
-          scaffoldBackgroundColor: const Color(0xFFF6F7FC),
-        ),
-        home: const StudioScreen(),
-      );
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: appThemeMode,
+      builder: (context, mode, child) {
+        return MaterialApp(
+          title: 'Adaptive Focus Studio',
+          debugShowCheckedModeBanner: false,
+          theme: ThemeData(
+            useMaterial3: true,
+            brightness: Brightness.light,
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: const Color(0xFF5267D8),
+              brightness: Brightness.light,
+            ),
+            scaffoldBackgroundColor: const Color(0xFFF6F7FC),
+            cardTheme: const CardThemeData(
+              color: Colors.white,
+            ),
+          ),
+          darkTheme: ThemeData(
+            useMaterial3: true,
+            brightness: Brightness.dark,
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: const Color(0xFF5267D8),
+              brightness: Brightness.dark,
+            ),
+            scaffoldBackgroundColor: const Color(0xFF121212),
+            cardTheme: const CardThemeData(
+              color: Color(0xFF242424),
+            ),
+          ),
+          themeMode: mode,
+          home: const StudioScreen(),
+        );
+      },
+    );
+  }
 }
 
 IconData iconForCategory(String category) {
@@ -451,7 +483,13 @@ class _StudioScreenState extends ConsumerState<StudioScreen> {
     return ListView(padding: const EdgeInsets.all(20), children: [
       const Text('Hello, Student!', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
       const SizedBox(height: 8),
-      const Text('Make today a focused day.', style: TextStyle(fontSize: 16, color: Colors.black54)),
+      Text(
+        'Make today a focused day.',
+        style: TextStyle(
+          fontSize: 16,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+      ),
       const SizedBox(height: 24),
       Row(children: [
         Expanded(child: _SummaryCard(title: 'Sessions', value: '${sessions.length}', icon: Icons.check_circle_outline)),
@@ -461,7 +499,7 @@ class _StudioScreenState extends ConsumerState<StudioScreen> {
       const SizedBox(height: 14),
       Card(
         elevation: 0,
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -471,10 +509,14 @@ class _StudioScreenState extends ConsumerState<StudioScreen> {
                 children: [
                   const Icon(Icons.flag_outlined, color: Color(0xFF5267D8)),
                   const SizedBox(width: 8),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       "Today's focus goal",
-                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
                     ),
                   ),
                   Text(
@@ -499,13 +541,16 @@ class _StudioScreenState extends ConsumerState<StudioScreen> {
               const SizedBox(height: 10),
               Text(
                 '${_formatDuration(todayFocusSeconds)} of $_dailyGoalMinutes min',
-                style: const TextStyle(color: Colors.black87),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
               ),
               Text(
                 todayFocusSeconds >= goalSeconds
                     ? 'Daily goal reached — great work!'
                     : '${_formatDuration(goalSeconds - todayFocusSeconds)} remaining to reach your goal',
-                style: const TextStyle(color: Colors.black54, fontSize: 13),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontSize: 13,
+                ),
               ),
             ],
           ),
@@ -528,11 +573,20 @@ class _StudioScreenState extends ConsumerState<StudioScreen> {
           onDelete: () => _deletePreset(preset),
         ),
       const SizedBox(height: 16),
-      const Card(elevation: 0, color: Color(0xFFE8EBFF), child: Padding(padding: EdgeInsets.all(16), child: Row(children: [
-        Icon(Icons.lightbulb_outline, color: Color(0xFF5267D8)),
-        SizedBox(width: 12),
-        Expanded(child: Text('Tip: Choose a session duration that fits your study task.')),
-      ]))),
+      Card(
+        elevation: 0,
+        color: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF292D42)
+            : const Color(0xFFE8EBFF),
+        child: const Padding(
+          padding: EdgeInsets.all(16),
+          child: Row(children: [
+            Icon(Icons.lightbulb_outline, color: Color(0xFF5267D8)),
+            SizedBox(width: 12),
+            Expanded(child: Text('Tip: Choose a session duration that fits your study task.')),
+          ]),
+        ),
+      ),
     ]);
   }
 
@@ -552,20 +606,26 @@ class _StudioScreenState extends ConsumerState<StudioScreen> {
 
     return Card(
       elevation: 0,
-      color: const Color(0xFFE8EBFF),
+      color: Theme.of(context).brightness == Brightness.dark
+          ? const Color(0xFF292D42)
+          : const Color(0xFFE8EBFF),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
+            Row(
               children: [
-                Icon(Icons.auto_awesome, color: Color(0xFF5267D8)),
+                const Icon(Icons.auto_awesome, color: Color(0xFF5267D8)),
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'Smart focus suggestion',
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                   ),
                 ),
               ],
@@ -575,14 +635,21 @@ class _StudioScreenState extends ConsumerState<StudioScreen> {
               hasHistory
                   ? 'Try $recommendation minutes for your next focus session.'
                   : 'Your suggestion is $_defaultFocusMinutes minutes for now. Complete a session to personalize future suggestions.',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
             ),
             const SizedBox(height: 6),
             Text(
               hasHistory
                   ? 'Reason: this is the average actual duration of your ${completedCount > 5 ? '5 most recent' : 'recent'} completed sessions, rounded to the nearest 5 minutes.'
                   : 'Reason: there are no completed sessions to learn from yet, so the app uses your saved default focus duration.',
-              style: const TextStyle(color: Colors.black54, fontSize: 13),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 13,
+              ),
             ),
             const SizedBox(height: 12),
             Wrap(
@@ -681,21 +748,33 @@ class _StudioScreenState extends ConsumerState<StudioScreen> {
     return ListView(padding: const EdgeInsets.all(24), children: [
       const Text('Focus Session', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
       const SizedBox(height: 8),
-      const Text('One task at a time.', style: TextStyle(color: Colors.black54, fontSize: 16)),
+      Text(
+        'One task at a time.',
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+          fontSize: 16,
+        ),
+      ),
       const SizedBox(height: 32),
-      Card(elevation: 0, color: Colors.white, child: Padding(padding: const EdgeInsets.all(24), child: Column(children: [
+      Card(elevation: 0, color: Theme.of(context).colorScheme.surface, child: Padding(padding: const EdgeInsets.all(24), child: Column(children: [
         CircleAvatar(radius: 32, backgroundColor: const Color(0xFFE8EBFF), child: Icon(iconForCategory(preset.category), size: 32, color: const Color(0xFF5267D8))),
         const SizedBox(height: 16),
         Text(preset.title, textAlign: TextAlign.center, style: const TextStyle(fontSize: 23, fontWeight: FontWeight.bold)),
         const SizedBox(height: 6),
-        Text('${preset.category} • ${preset.targetMinutes} minutes', style: const TextStyle(color: Colors.black54)),
+        Text(
+          '${preset.category} • ${preset.targetMinutes} minutes',
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+        ),
         const SizedBox(height: 32),
         SizedBox(width: 220, height: 220, child: Stack(fit: StackFit.expand, children: [
           CircularProgressIndicator(value: progress.clamp(0.0, 1.0), strokeWidth: 10, backgroundColor: const Color(0xFFE8EBFF), color: const Color(0xFF5267D8), strokeCap: StrokeCap.round),
           Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
             Text(_formatTime(_remainingSeconds), style: const TextStyle(fontSize: 38, fontWeight: FontWeight.bold)),
             const SizedBox(height: 6),
-            const Text('remaining', style: TextStyle(color: Colors.black54)),
+            Text(
+              'remaining',
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+            ),
           ])),
         ])),
         const SizedBox(height: 24),
@@ -750,7 +829,10 @@ class _StudioScreenState extends ConsumerState<StudioScreen> {
     return ListView(padding: const EdgeInsets.all(20), children: [
       const Text('Session History', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
       const SizedBox(height: 8),
-      const Text('Review your focus sessions.', style: TextStyle(color: Colors.black54)),
+      Text(
+        'Review your focus sessions.',
+        style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+      ),
       const SizedBox(height: 20),
       Row(children: [
         Expanded(child: _SummaryCard(title: 'Sessions', value: '${sessions.length}', icon: Icons.history)),
@@ -760,7 +842,7 @@ class _StudioScreenState extends ConsumerState<StudioScreen> {
       const SizedBox(height: 16),
       Card(
         elevation: 0,
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -771,9 +853,9 @@ class _StudioScreenState extends ConsumerState<StudioScreen> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 4),
-              const Text(
+              Text(
                 'Focus time recorded each day',
-                style: TextStyle(color: Colors.black54),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
               ),
               const SizedBox(height: 20),
               SizedBox(
@@ -796,7 +878,10 @@ class _StudioScreenState extends ConsumerState<StudioScreen> {
                           children: [
                             Text(
                               seconds == 0 ? '0' : '${(seconds / 60).round()}m',
-                              style: const TextStyle(fontSize: 10, color: Colors.black54),
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
                             ),
                             const SizedBox(height: 5),
                             Container(
@@ -841,7 +926,7 @@ class _StudioScreenState extends ConsumerState<StudioScreen> {
         const SizedBox(height: 16),
         FilledButton(onPressed: () => setState(() => _selectedIndex = 0), child: const Text('Choose a focus preset')),
       ]))) else for (final record in filtered)
-        Card(elevation: 0, color: Colors.white, margin: const EdgeInsets.only(bottom: 12), child: ListTile(
+        Card(elevation: 0, color: Theme.of(context).colorScheme.surface, margin: const EdgeInsets.only(bottom: 12), child: ListTile(
           leading: CircleAvatar(backgroundColor: const Color(0xFFE8EBFF), child: Icon(record.status == 'Completed' ? Icons.check : Icons.timer_outlined, color: const Color(0xFF5267D8))),
           title: Text(record.presetTitle, style: const TextStyle(fontWeight: FontWeight.bold)),
           subtitle: Text('${DateTime.tryParse(record.startedAt)?.toLocal().toString().substring(0, 16) ?? record.startedAt}\n${record.status} • ${_formatDuration(record.actualSeconds)}'),
@@ -861,7 +946,7 @@ class _StudioScreenState extends ConsumerState<StudioScreen> {
           'Focus Studio',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        backgroundColor: const Color(0xFFF6F7FC),
+        backgroundColor: Theme.of(context).colorScheme.surface,
         actions: [
           IconButton(
             onPressed: _showSettings,
@@ -955,11 +1040,11 @@ class _SummaryCard extends StatelessWidget {
   const _SummaryCard({required this.title, required this.value, required this.icon});
 
   @override
-  Widget build(BuildContext context) => Card(elevation: 0, color: Colors.white, child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+  Widget build(BuildContext context) => Card(elevation: 0, color: Theme.of(context).colorScheme.surface, child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
     Icon(icon, color: const Color(0xFF5267D8), size: 28),
     const SizedBox(height: 16),
     Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-    Text(title, style: const TextStyle(color: Colors.black54)),
+    Text(title, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
   ])));
 }
 
@@ -971,7 +1056,7 @@ class _PresetCard extends StatelessWidget {
   const _PresetCard({required this.preset, required this.onStart, required this.onEdit, required this.onDelete});
 
   @override
-  Widget build(BuildContext context) => Card(elevation: 0, color: Colors.white, margin: const EdgeInsets.only(bottom: 12), child: Padding(padding: const EdgeInsets.symmetric(vertical: 6), child: ListTile(
+  Widget build(BuildContext context) => Card(elevation: 0, color: Theme.of(context).colorScheme.surface, margin: const EdgeInsets.only(bottom: 12), child: Padding(padding: const EdgeInsets.symmetric(vertical: 6), child: ListTile(
     contentPadding: const EdgeInsets.only(left: 12, right: 4),
     leading: CircleAvatar(backgroundColor: const Color(0xFFE8EBFF), child: Icon(iconForCategory(preset.category), color: const Color(0xFF5267D8))),
     title: Text(preset.title, style: const TextStyle(fontWeight: FontWeight.bold)),

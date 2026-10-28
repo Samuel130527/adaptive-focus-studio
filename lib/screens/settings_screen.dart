@@ -2,6 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../theme_controller.dart';
+
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -17,6 +19,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   int _duration = 25;
   int _dailyGoal = 120;
   bool _notificationsEnabled = true;
+  bool _darkModeEnabled = false;
   bool _isLoading = true;
 
   @override
@@ -35,6 +38,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _dailyGoal = prefs.getInt(_goalKey) ?? 120;
       _notificationsEnabled =
           prefs.getBool(_notificationsKey) ?? true;
+      _darkModeEnabled = prefs.getBool(darkModeKey) ?? false;
       _isLoading = false;
     });
   }
@@ -63,6 +67,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() => _notificationsEnabled = value);
   }
 
+  Future<void> _saveDarkMode(bool value) async {
+    try {
+      await saveTheme(value);
+
+      if (!mounted) return;
+      setState(() => _darkModeEnabled = value);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not save the theme preference.'),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -78,15 +98,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           const Text(
             'Personalize your focus sessions',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 6),
-          const Text(
+          Text(
             'Your preferences are saved automatically on this device.',
-            style: TextStyle(color: Colors.black54),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 24),
 
+          // Default focus duration
           Card(
             child: Padding(
               padding: const EdgeInsets.all(18),
@@ -97,11 +123,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     contentPadding: EdgeInsets.zero,
                     leading: Icon(Icons.timer_outlined),
                     title: Text('Default focus duration'),
-                    subtitle: Text('Choose a duration between 5 and 120 minutes.'),
+                    subtitle: Text(
+                      'Choose a duration between 5 and 120 minutes.',
+                    ),
                   ),
                   Text(
                     '$_duration minutes',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   Slider(
                     value: _duration.toDouble(),
@@ -123,6 +153,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           const SizedBox(height: 12),
 
+          // Daily focus goal
           Card(
             child: Padding(
               padding: const EdgeInsets.all(18),
@@ -133,11 +164,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     contentPadding: EdgeInsets.zero,
                     leading: Icon(Icons.flag_outlined),
                     title: Text('Daily focus goal'),
-                    subtitle: Text('Set your target focus time per day.'),
+                    subtitle: Text(
+                      'Set your target focus time per day.',
+                    ),
                   ),
                   Text(
                     '${_dailyGoal ~/ 60} hr ${_dailyGoal % 60} min',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   Slider(
                     value: _dailyGoal.toDouble(),
@@ -159,6 +194,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           const SizedBox(height: 12),
 
+          // Notifications
           Card(
             child: SwitchListTile(
               secondary: const Icon(Icons.notifications_outlined),
@@ -171,14 +207,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
 
+          const SizedBox(height: 12),
+
+          // Dark mode
+          Card(
+            child: SwitchListTile(
+              secondary: const Icon(Icons.dark_mode_outlined),
+              title: const Text('Dark mode'),
+              subtitle: const Text(
+                'Use a dark theme throughout the app.',
+              ),
+              value: _darkModeEnabled,
+              onChanged: _saveDarkMode,
+            ),
+          ),
+
           const SizedBox(height: 20),
 
-          const Card(
+          Card(
             child: ListTile(
-              leading: Icon(Icons.storage_outlined),
-              title: Text('Local storage'),
+              leading: const Icon(Icons.storage_outlined),
+              title: const Text('Local storage'),
               subtitle: Text(
                 'Your preferences are stored locally using SharedPreferences.',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
           ),
