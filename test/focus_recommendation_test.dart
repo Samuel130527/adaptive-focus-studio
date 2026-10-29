@@ -94,5 +94,70 @@ void main() {
         10,
       );
     });
+    
+    test('clamps a short completed-session recommendation to five minutes', () {
+      final sessions = [
+        session(startedAt: '2026-10-21T10:00:00', actualSeconds: 2 * 60),
+      ];
+
+      expect(
+        FocusRecommendation.suggestMinutes(
+          sessions: sessions,
+          defaultMinutes: 40,
+        ),
+        5,
+      );
+    });
+
+    test('clamps a long completed-session recommendation to 120 minutes', () {
+      final sessions = [
+        session(startedAt: '2026-10-21T10:00:00', actualSeconds: 150 * 60),
+      ];
+
+      expect(
+        FocusRecommendation.suggestMinutes(
+          sessions: sessions,
+          defaultMinutes: 40,
+        ),
+        120,
+      );
+    });
+
+    test('rounds the average of completed sessions to five minutes', () {
+      final sessions = [
+        session(startedAt: '2026-10-21T10:00:00', actualSeconds: 20 * 60),
+        session(startedAt: '2026-10-20T10:00:00', actualSeconds: 27 * 60),
+      ];
+
+      expect(
+        FocusRecommendation.suggestMinutes(
+          sessions: sessions,
+          defaultMinutes: 40,
+        ),
+        25,
+      );
+    });
+
+    test('uses default duration when no sessions are valid', () {
+      final sessions = [
+        session(
+          startedAt: '2026-10-21T10:00:00',
+          actualSeconds: 0,
+        ),
+        session(
+          startedAt: '2026-10-20T10:00:00',
+          actualSeconds: 50 * 60,
+          status: 'Finished early',
+        ),
+      ];
+
+      expect(
+        FocusRecommendation.suggestMinutes(
+          sessions: sessions,
+          defaultMinutes: 40,
+        ),
+        40,
+      );
+    });
   });
 }
